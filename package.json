@@ -1,0 +1,39 @@
+{
+  "name": "relayer",
+  "version": "1.0.0",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "ts-node src/server.ts",
+    "dev": "nodemon src/server.ts",
+    "build": "tsc",
+    "encrypt": "ts-node src/encryptKey.ts",
+    "generateSignature": "ts-node src/generateSignature.ts",
+    "whitelistUser": "ts-node src/whitelistUser.ts",
+    "compile": "ts-node src/compileContract.ts",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "vercel-build": "echo \"Building for Vercel...\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "ethers": "^6.13.5",
+    "express": "^5.1.0",
+    "fs-extra": "^11.3.0",
+    "morgan": "^1.10.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.1",
+    "@types/fs-extra": "^11.0.4",
+    "@types/morgan": "^1.9.9",
+    "@types/node": "^22.14.1",
+    "nodemon": "^3.1.9",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}
