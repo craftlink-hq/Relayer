@@ -9,6 +9,7 @@ import registryABI from './abi/registryAbi.json';
 import reviewSystemABI from './abi/reviewSystemAbi.json';
 import gigMarketplaceABI from './abi/gigMarketplaceAbi.json';
 import paymentProcessorABI from './abi/paymentProcessorAbi.json';
+import craftCoinABI from './abi/craftCoinAbi.json';
 
 dotenv.config();
 
@@ -31,7 +32,7 @@ function validateEnv() {
     const requiredVars = [
         'RPC_URL_LISK', 'PRIVATE_KEY_PASSWORD', 'ENCRYPTED_KEY_JSON',
         'TOKEN_ADDRESS', 'REGISTRY_ADDRESS', 'REVIEW_SYSTEM_ADDRESS',
-        'GIG_MARKETPLACE_ADDRESS', 'PAYMENT_PROCESSOR_ADDRESS'
+        'GIG_MARKETPLACE_ADDRESS', 'PAYMENT_PROCESSOR_ADDRESS', 'CRAFT_COIN_ADDRESS'
     ];
     const missingVars = requiredVars.filter((varName) => !process.env[varName]);
     if (missingVars.length > 0) {
@@ -69,25 +70,41 @@ async function executeGaslessTransaction(data: GaslessRequest) {
             method = 'registerAsClientFor';
             args = [data.user, data.params.ipfsHash];
             break;
-        case 'submitReview': //TODO: TO BE CORRECTED
+        case 'submitReview':
             contract = new ethers.Contract(process.env.REVIEW_SYSTEM_ADDRESS!, reviewSystemABI, signer);
-            method = 'submitReviewFor';
+            method = 'artisanSubmitReviewFor';
             args = [data.user, data.params.databaseId, data.params.rating, data.params.commentHash];
             break;
-        case 'submitClientReview': //TODO: TO BE CORRECTED
+        case 'submitClientReview':
             contract = new ethers.Contract(process.env.REVIEW_SYSTEM_ADDRESS!, reviewSystemABI, signer);
-            method = 'submitClientReviewFor';
+            method = 'clientSubmitReviewFor';
             args = [data.user, data.params.databaseId, data.params.rating, data.params.commentHash];
             break;
         case 'createGig':
             contract = new ethers.Contract(process.env.GIG_MARKETPLACE_ADDRESS!, gigMarketplaceABI, signer);
             method = 'createGigFor';
-            args = [data.user, data.params.rootHash, data.params.databaseId, data.params.budget];
+            args = [
+                data.user,
+                data.params.rootHash,
+                data.params.databaseId,
+                data.params.budget,
+                data.params.deadline,
+                data.params.v,
+                data.params.r,
+                data.params.s
+            ];
             break;
         case 'applyForGig':
             contract = new ethers.Contract(process.env.GIG_MARKETPLACE_ADDRESS!, gigMarketplaceABI, signer);
             method = 'applyForGigFor';
-            args = [data.user, data.params.databaseId];
+            args = [
+                data.user,
+                data.params.databaseId,
+                data.params.deadline,
+                data.params.v,
+                data.params.r,
+                data.params.s
+            ];
             break;
         case 'hireArtisan':
             contract = new ethers.Contract(process.env.GIG_MARKETPLACE_ADDRESS!, gigMarketplaceABI, signer);
@@ -111,7 +128,11 @@ async function executeGaslessTransaction(data: GaslessRequest) {
             const gigId = await gigMarketplace.indexes(data.params.databaseId);
             args = [data.user, gigId];
             break;
-        //TODO: ADD CASES FROM THE NEW CONTRACT
+        case 'mint':
+            contract = new ethers.Contract(process.env.CRAFT_COIN_ADDRESS!, craftCoinABI, signer);
+            method = 'mintFor';
+            args = [data.user];
+            break;
         default:
             throw new Error('Unsupported function');
     }
