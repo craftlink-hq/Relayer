@@ -125,8 +125,9 @@ async function executeGaslessTransaction(data: GaslessRequest) {
             contract = new ethers.Contract(process.env.PAYMENT_PROCESSOR_ADDRESS!, paymentProcessorABI, signer);
             method = 'releaseArtisanFundsFor';
             const gigMarketplace = new ethers.Contract(process.env.GIG_MARKETPLACE_ADDRESS!, gigMarketplaceABI, signer);
-            const gigId = await gigMarketplace.indexes(data.params.databaseId);
-            args = [data.user, gigId];
+            // const gigId = await gigMarketplace.indexes(data.params.databaseId);
+            const info = await gigMarketplace.getGigInfo(data.params.databaseId);
+            args = [data.user, info.paymentId];
             break;
         case 'mint':
             contract = new ethers.Contract(process.env.CRAFT_COIN_ADDRESS!, craftCoinABI, signer);
@@ -171,17 +172,9 @@ app.get('/', (req: Request, res: Response) => {
     res.status(200).send({ message: 'Backend is running!' });
 });
 
+// // Start the server for local deployment ONLY
+// app.listen(port, () => {
+//     console.log(`Server is running on http://localhost:${port}`);
+// });
+
 export default app;
-
-//USAGE
-// {
-//     "functionName": "function_name",
-//     "user": "user_address",
-//     "params": { "param1": "value1", ... }
-// }
-
-// For example:
-// {"functionName": "claim", "user": "0xUserAddress", "params": {}}
-// {"functionName": "registerAsArtisan", "user": "0xUserAddress", "params": {"ipfsHash": "hash"}}
-// {"functionName": "releaseArtisanFunds", "user": "0xArtisanAddress", "params": {"databaseId": "gigDbId"}}
-// Send Request: POST the signed message to /gasless-transaction. The server verifies the signature and executes the transaction.
