@@ -63,12 +63,12 @@ async function executeGaslessTransaction(data: GaslessRequest) {
         case 'registerAsArtisan':
             contract = new ethers.Contract(process.env.REGISTRY_ADDRESS!, registryABI, signer);
             method = 'registerAsArtisanFor';
-            args = [data.user, data.params.ipfsHash];
+            args = [data.user, data.params.ipfsUrl];
             break;
         case 'registerAsClient':
             contract = new ethers.Contract(process.env.REGISTRY_ADDRESS!, registryABI, signer);
             method = 'registerAsClientFor';
-            args = [data.user, data.params.ipfsHash];
+            args = [data.user, data.params.ipfsUrl];
             break;
         case 'submitReview':
             contract = new ethers.Contract(process.env.REVIEW_SYSTEM_ADDRESS!, reviewSystemABI, signer);
@@ -172,9 +172,9 @@ app.get('/', (req: Request, res: Response) => {
     res.status(200).send({ message: 'Backend is running!' });
 });
 
-// // Start the server for local deployment ONLY
-// app.listen(port, () => {
-//     console.log(`Server is running on http://localhost:${port}`);
-// });
+// Start the server for local deployment ONLY
+app.listen(port, () => {
+    console.log(`Server is running on http://localhost:${port}`);
+});
 
 export default app;
