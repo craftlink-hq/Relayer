@@ -16,7 +16,10 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 3005;
 
-app.use(cors());
+const allowedOrigins = ["http://localhost:3000", "https://craftlink-hq.vercel.app"];
+app.use(
+  cors({ origin: allowedOrigins, credentials: true }) //allowedHeaders: ["*"]
+);
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(morgan('common'));
