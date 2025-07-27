@@ -192,11 +192,15 @@ app.post('/gasless-transaction', async (req: Request, res: Response) => {
         res.status(400).send({ success: false, message: 'Invalid or duplicate nonce' });
         return;
     }
-    nonceTracker[data.user] = data.nonce;
 
     try {
         const result = await executeGaslessTransaction(data);
-        res.status(result.success ? 200 : 500).send(result);
+        if (result.success) {
+            nonceTracker[data.user] = data.nonce; // Only update nonce if transaction succeeds
+            res.status(200).send(result);
+        } else {
+            res.status(500).send(result); // Do not update nonce on failure, allowing retry with same nonce
+        }
     } catch (error: any) {
         res.status(500).send({ success: false, message: error.reason || 'Transaction failed' });
     }
