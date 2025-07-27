@@ -1,0 +1,248 @@
+[
+    {
+        "inputs": [
+            { "internalType": "address", "name": "_relayer", "type": "address" }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "artisanAddress",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "string",
+                "name": "ipfsHash",
+                "type": "string"
+            }
+        ],
+        "name": "ArtisanRegistered",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "artisanAddress",
+                "type": "address"
+            }
+        ],
+        "name": "ArtisanVerified",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "clientAddress",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "string",
+                "name": "ipfsHash",
+                "type": "string"
+            }
+        ],
+        "name": "ClientRegistered",
+        "type": "event"
+    },
+    {
+        "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+        "name": "artisanAddresses",
+        "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
+        "name": "artisans",
+        "outputs": [
+            { "internalType": "string", "name": "ipfsHash", "type": "string" },
+            { "internalType": "bool", "name": "isVerified", "type": "bool" },
+            {
+                "internalType": "uint256",
+                "name": "registrationDate",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+        "name": "clientAddresses",
+        "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
+        "name": "clients",
+        "outputs": [
+            { "internalType": "string", "name": "ipfsHash", "type": "string" },
+            {
+                "internalType": "uint256",
+                "name": "registrationDate",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getAllArtisans",
+        "outputs": [
+            { "internalType": "address[]", "name": "", "type": "address[]" }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getAllClients",
+        "outputs": [
+            { "internalType": "address[]", "name": "", "type": "address[]" }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getArtisanCount",
+        "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_artisanAddress",
+                "type": "address"
+            }
+        ],
+        "name": "getArtisanDetails",
+        "outputs": [
+            { "internalType": "string", "name": "ipfsHash", "type": "string" },
+            { "internalType": "bool", "name": "isVerified", "type": "bool" },
+            {
+                "internalType": "uint256",
+                "name": "registrationDate",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getClientCount",
+        "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            { "internalType": "address", "name": "_clientAddress", "type": "address" }
+        ],
+        "name": "getClientDetails",
+        "outputs": [
+            { "internalType": "string", "name": "ipfsHash", "type": "string" },
+            {
+                "internalType": "uint256",
+                "name": "registrationDate",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_artisanAddress",
+                "type": "address"
+            }
+        ],
+        "name": "isArtisan",
+        "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_artisanAddress",
+                "type": "address"
+            }
+        ],
+        "name": "isArtisanVerified",
+        "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            { "internalType": "address", "name": "_clientAddress", "type": "address" }
+        ],
+        "name": "isClient",
+        "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
+        "name": "isRegisteredAsArtisan",
+        "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
+        "name": "isRegisteredAsClient",
+        "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            { "internalType": "address", "name": "_user", "type": "address" },
+            { "internalType": "string", "name": "_ipfsHash", "type": "string" }
+        ],
+        "name": "registerAsArtisanFor",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            { "internalType": "address", "name": "_user", "type": "address" },
+            { "internalType": "string", "name": "_ipfsHash", "type": "string" }
+        ],
+        "name": "registerAsClientFor",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "relayer",
+        "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+        "stateMutability": "view",
+        "type": "function"
+    }
+]

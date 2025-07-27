@@ -1,0 +1,238 @@
+[
+    {
+        "inputs": [
+            { "internalType": "address", "name": "_relayer", "type": "address" },
+            { "internalType": "address", "name": "_tokenAddress", "type": "address" }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "uint256",
+                "name": "paymentId",
+                "type": "uint256"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "client",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "PaymentCreated",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "uint256",
+                "name": "paymentId",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amountToClient",
+                "type": "uint256"
+            }
+        ],
+        "name": "PaymentRefunded",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "uint256",
+                "name": "paymentId",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amountToArtisan",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "platformFee",
+                "type": "uint256"
+            }
+        ],
+        "name": "PaymentReleased",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "newFeePercentage",
+                "type": "uint256"
+            }
+        ],
+        "name": "PlatformFeeUpdated",
+        "type": "event"
+    },
+    {
+        "inputs": [
+            { "internalType": "address", "name": "_client", "type": "address" },
+            { "internalType": "uint256", "name": "_amount", "type": "uint256" }
+        ],
+        "name": "createPaymentFor",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "currentPaymentId",
+        "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            { "internalType": "address", "name": "_artisan", "type": "address" }
+        ],
+        "name": "getArtisanAmountMade",
+        "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            { "internalType": "address", "name": "_client", "type": "address" }
+        ],
+        "name": "getClientAmountSpent",
+        "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            { "internalType": "uint256", "name": "_paymentId", "type": "uint256" }
+        ],
+        "name": "getPaymentDetails",
+        "outputs": [
+            { "internalType": "address", "name": "client", "type": "address" },
+            { "internalType": "uint256", "name": "amount", "type": "uint256" },
+            { "internalType": "uint256", "name": "platformFee", "type": "uint256" },
+            { "internalType": "bool", "name": "isReleased", "type": "bool" }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getPlatformFeePercentage",
+        "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            { "internalType": "uint256", "name": "_paymentId", "type": "uint256" }
+        ],
+        "name": "hasClientReleasedFunds",
+        "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "paymentId",
+        "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+        "name": "payments",
+        "outputs": [
+            { "internalType": "address", "name": "client", "type": "address" },
+            { "internalType": "uint256", "name": "amount", "type": "uint256" },
+            { "internalType": "uint256", "name": "platformFee", "type": "uint256" },
+            { "internalType": "bool", "name": "isReleased", "type": "bool" }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "platformFeePercentage",
+        "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "platformWallet",
+        "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            { "internalType": "uint256", "name": "_paymentId", "type": "uint256" }
+        ],
+        "name": "refundClientFunds",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "relayer",
+        "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            { "internalType": "address", "name": "artisan", "type": "address" },
+            { "internalType": "uint256", "name": "_paymentId", "type": "uint256" }
+        ],
+        "name": "releaseArtisanFundsFor",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "token",
+        "outputs": [
+            { "internalType": "contract IToken", "name": "", "type": "address" }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_newFeePercentage",
+                "type": "uint256"
+            }
+        ],
+        "name": "updatePlatformFee",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    }
+]
