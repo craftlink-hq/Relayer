@@ -8,7 +8,7 @@ import tokenABI from './abi/tokenAbi.json';
 import registryABI from './abi/registryAbi.json';
 import reviewSystemABI from './abi/reviewSystemAbi.json';
 import gigMarketplaceABI from './abi/gigMarketplaceAbi.json';
-import paymentProcessorABI from './abi/paymentProcessorAbi.json';
+import paymentProcessorABI from './abi/paymentProcessorABI.json';
 import craftCoinABI from './abi/craftCoinAbi.json';
 
 dotenv.config();
@@ -17,9 +17,7 @@ const app = express();
 const port = process.env.PORT || 3005;
 
 const allowedOrigins = ["http://localhost:3000", "https://craftlink-hq.vercel.app", "https://craftlink-alpha.vercel.app", "https://craftlinkhq.com", "https://www.craftlinkhq.com"];
-app.use(
-  cors({ origin: allowedOrigins, credentials: true }) //allowedHeaders: ["*"]
-);
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(morgan('common'));
@@ -29,7 +27,11 @@ interface GaslessRequest {
     params: any;
     functionName: string;
     signature: string;
+    nonce: number;
 }
+
+// Persistent nonce tracking
+const nonceTracker: { [user: string]: number } = {};
 
 function validateEnv() {
     const requiredVars = [
@@ -43,12 +45,20 @@ function validateEnv() {
     }
 }
 
-async function getSigner() {
+async function getSigner(): Promise<ethers.Wallet | ethers.HDNodeWallet> {
     validateEnv();
     const encryptedJsonKey = process.env.ENCRYPTED_KEY_JSON!;
     const wallet = await ethers.Wallet.fromEncryptedJson(encryptedJsonKey, process.env.PRIVATE_KEY_PASSWORD!);
     const provider = new ethers.JsonRpcProvider(process.env.RPC_URL_LISK);
     return wallet.connect(provider);
+}
+
+async function resetAllowanceIfNeeded(signer: ethers.Wallet | ethers.HDNodeWallet, user: string, tokenAddress: string, spender: string) {
+    const tokenContract = new ethers.Contract(tokenAddress, tokenABI, signer);
+    const currentAllowance = await tokenContract.allowance(user, spender);
+    if (currentAllowance > 0) {
+        await tokenContract.approveFor(user, spender, 0);
+    }
 }
 
 async function executeGaslessTransaction(data: GaslessRequest) {
@@ -58,6 +68,16 @@ async function executeGaslessTransaction(data: GaslessRequest) {
     let args: any[];
 
     switch (data.functionName) {
+        case 'approveToken':
+            contract = new ethers.Contract(process.env.TOKEN_ADDRESS!, tokenABI, signer);
+            method = 'approveFor';
+            args = [data.user, data.params.spender, data.params.amount];
+            break;
+        case 'approveCraftCoin':
+            contract = new ethers.Contract(process.env.CRAFT_COIN_ADDRESS!, craftCoinABI, signer);
+            method = 'approveFor';
+            args = [data.user, data.params.spender, data.params.amount];
+            break;
         case 'claim':
             contract = new ethers.Contract(process.env.TOKEN_ADDRESS!, tokenABI, signer);
             method = 'claimFor';
@@ -86,28 +106,12 @@ async function executeGaslessTransaction(data: GaslessRequest) {
         case 'createGig':
             contract = new ethers.Contract(process.env.GIG_MARKETPLACE_ADDRESS!, gigMarketplaceABI, signer);
             method = 'createGigFor';
-            args = [
-                data.user,
-                data.params.rootHash,
-                data.params.databaseId,
-                data.params.budget,
-                data.params.deadline,
-                data.params.v,
-                data.params.r,
-                data.params.s
-            ];
+            args = [data.user, data.params.rootHash, data.params.databaseId, data.params.budget];
             break;
         case 'applyForGig':
             contract = new ethers.Contract(process.env.GIG_MARKETPLACE_ADDRESS!, gigMarketplaceABI, signer);
             method = 'applyForGigFor';
-            args = [
-                data.user,
-                data.params.databaseId,
-                data.params.deadline,
-                data.params.v,
-                data.params.r,
-                data.params.s
-            ];
+            args = [data.user, data.params.databaseId];
             break;
         case 'hireArtisan':
             contract = new ethers.Contract(process.env.GIG_MARKETPLACE_ADDRESS!, gigMarketplaceABI, signer);
@@ -128,7 +132,6 @@ async function executeGaslessTransaction(data: GaslessRequest) {
             contract = new ethers.Contract(process.env.PAYMENT_PROCESSOR_ADDRESS!, paymentProcessorABI, signer);
             method = 'releaseArtisanFundsFor';
             const gigMarketplace = new ethers.Contract(process.env.GIG_MARKETPLACE_ADDRESS!, gigMarketplaceABI, signer);
-            // const gigId = await gigMarketplace.indexes(data.params.databaseId);
             const info = await gigMarketplace.getGigInfo(data.params.databaseId);
             args = [data.user, info.paymentId];
             break;
@@ -137,12 +140,25 @@ async function executeGaslessTransaction(data: GaslessRequest) {
             method = 'mintFor';
             args = [data.user];
             break;
+        case 'closeGig':
+            contract = new ethers.Contract(process.env.GIG_MARKETPLACE_ADDRESS!, gigMarketplaceABI, signer);
+            method = 'closeGigFor';
+            args = [data.user, data.params.databaseId];
+            break;
         default:
             throw new Error('Unsupported function');
     }
 
     const tx = await contract[method](...args);
     const receipt = await tx.wait();
+
+    // Reset allowances for specific functions if not already zero
+    if (data.functionName === 'createGig') {
+        await resetAllowanceIfNeeded(signer, data.user, process.env.TOKEN_ADDRESS!, process.env.PAYMENT_PROCESSOR_ADDRESS!);
+    } else if (data.functionName === 'applyForGig') {
+        await resetAllowanceIfNeeded(signer, data.user, process.env.CRAFT_COIN_ADDRESS!, process.env.GIG_MARKETPLACE_ADDRESS!);
+    }
+
     return {
         success: receipt.status === 1,
         tx,
@@ -154,20 +170,35 @@ function verifySignatureWithEthers(message: string, signature: string): string {
     return ethers.verifyMessage(message, signature);
 }
 
+app.get('/nonce/:user', (req: Request, res: Response) => {
+    const user = req.params.user.toLowerCase();
+    const currentNonce = nonceTracker[user] || 0;
+    res.status(200).send({ nonce: currentNonce + 1 });
+});
+
 app.post('/gasless-transaction', async (req: Request, res: Response) => {
     const data: GaslessRequest = req.body;
-    const message = JSON.stringify({ functionName: data.functionName, user: data.user, params: data.params });
+    const message = JSON.stringify({ functionName: data.functionName, user: data.user, params: data.params, nonce: data.nonce });
     const signerAddress = verifySignatureWithEthers(message, data.signature);
 
-    if (signerAddress.toLowerCase() === data.user.toLowerCase()) {
-        try {
-            const result = await executeGaslessTransaction(data);
-            res.status(result.success ? 200 : 500).send(result);
-        } catch (error: any) {
-            res.status(500).send({ success: false, message: error.reason || 'Transaction failed' });
-        }
-    } else {
+    if (signerAddress.toLowerCase() !== data.user.toLowerCase()) {
         res.status(400).send({ success: false, message: 'Invalid signature' });
+        return;
+    }
+
+    // Validate nonce
+    const lastNonce = nonceTracker[data.user] || 0;
+    if (data.nonce !== lastNonce + 1) {
+        res.status(400).send({ success: false, message: 'Invalid or duplicate nonce' });
+        return;
+    }
+    nonceTracker[data.user] = data.nonce;
+
+    try {
+        const result = await executeGaslessTransaction(data);
+        res.status(result.success ? 200 : 500).send(result);
+    } catch (error: any) {
+        res.status(500).send({ success: false, message: error.reason || 'Transaction failed' });
     }
 });
 
@@ -175,7 +206,6 @@ app.get('/', (req: Request, res: Response) => {
     res.status(200).send({ message: 'Backend is running!' });
 });
 
-// Start the server for local deployment ONLY
 app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
 });
