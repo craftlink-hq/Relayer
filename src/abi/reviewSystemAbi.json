@@ -97,17 +97,6 @@
   },
   {
     "inputs": [
-      { "internalType": "bytes32", "name": "_databaseId", "type": "bytes32" },
-      { "internalType": "uint256", "name": "_rating", "type": "uint256" },
-      { "internalType": "string", "name": "_commentHash", "type": "string" }
-    ],
-    "name": "artisanSubmitReview",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
       { "internalType": "address", "name": "reviewer", "type": "address" },
       { "internalType": "bytes32", "name": "_databaseId", "type": "bytes32" },
       { "internalType": "uint256", "name": "_rating", "type": "uint256" },
@@ -137,17 +126,6 @@
   },
   {
     "inputs": [
-      { "internalType": "bytes32", "name": "_databaseId", "type": "bytes32" },
-      { "internalType": "uint256", "name": "_rating", "type": "uint256" },
-      { "internalType": "string", "name": "_commentHash", "type": "string" }
-    ],
-    "name": "clientSubmitReview",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
       { "internalType": "address", "name": "_reviewer", "type": "address" },
       { "internalType": "bytes32", "name": "_databaseId", "type": "bytes32" },
       { "internalType": "uint256", "name": "_rating", "type": "uint256" },
@@ -163,6 +141,15 @@
       { "internalType": "address", "name": "_artisan", "type": "address" }
     ],
     "name": "getArtisanAverageRating",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "_artisan", "type": "address" }
+    ],
+    "name": "getArtisanReviewCount",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
     "type": "function"
@@ -216,6 +203,15 @@
     "inputs": [
       { "internalType": "address", "name": "_client", "type": "address" }
     ],
+    "name": "getClientReviewCount",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "_client", "type": "address" }
+    ],
     "name": "getClientReviewInfos",
     "outputs": [
       {
@@ -245,6 +241,35 @@
     ],
     "name": "getClientReviews",
     "outputs": [{ "internalType": "string[]", "name": "", "type": "string[]" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "_reviewer", "type": "address" },
+      { "internalType": "address", "name": "_reviewee", "type": "address" },
+      { "internalType": "bytes32", "name": "_databaseId", "type": "bytes32" }
+    ],
+    "name": "getReviewDetails",
+    "outputs": [
+      {
+        "components": [
+          { "internalType": "address", "name": "reviewer", "type": "address" },
+          { "internalType": "address", "name": "reviewee", "type": "address" },
+          {
+            "internalType": "bytes32",
+            "name": "databaseId",
+            "type": "bytes32"
+          },
+          { "internalType": "uint256", "name": "rating", "type": "uint256" },
+          { "internalType": "string", "name": "commentHash", "type": "string" },
+          { "internalType": "uint256", "name": "timestamp", "type": "uint256" }
+        ],
+        "internalType": "struct ReviewSystem.ReviewInfo",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
     "stateMutability": "view",
     "type": "function"
   },

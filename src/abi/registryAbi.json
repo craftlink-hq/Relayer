@@ -102,6 +102,24 @@
   },
   {
     "inputs": [],
+    "name": "getAllArtisans",
+    "outputs": [
+      { "internalType": "address[]", "name": "", "type": "address[]" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getAllClients",
+    "outputs": [
+      { "internalType": "address[]", "name": "", "type": "address[]" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "getArtisanCount",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
@@ -202,28 +220,10 @@
   },
   {
     "inputs": [
-      { "internalType": "string", "name": "_ipfsHash", "type": "string" }
-    ],
-    "name": "registerAsArtisan",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
       { "internalType": "address", "name": "_user", "type": "address" },
       { "internalType": "string", "name": "_ipfsHash", "type": "string" }
     ],
     "name": "registerAsArtisanFor",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      { "internalType": "string", "name": "_ipfsHash", "type": "string" }
-    ],
-    "name": "registerAsClient",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
