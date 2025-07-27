@@ -45,7 +45,7 @@ function validateEnv() {
     }
 }
 
-async function getSigner(): Promise<ethers.Wallet | ethers.HDNodeWallet> {
+async function getSigner() {
     validateEnv();
     const encryptedJsonKey = process.env.ENCRYPTED_KEY_JSON!;
     const wallet = await ethers.Wallet.fromEncryptedJson(encryptedJsonKey, process.env.PRIVATE_KEY_PASSWORD!);
@@ -53,7 +53,7 @@ async function getSigner(): Promise<ethers.Wallet | ethers.HDNodeWallet> {
     return wallet.connect(provider);
 }
 
-async function resetAllowanceIfNeeded(signer: ethers.Wallet | ethers.HDNodeWallet, user: string, tokenAddress: string, spender: string) {
+async function resetAllowanceIfNeeded(signer: ethers.Signer, user: string, tokenAddress: string, spender: string) {
     const tokenContract = new ethers.Contract(tokenAddress, tokenABI, signer);
     const currentAllowance = await tokenContract.allowance(user, spender);
     if (currentAllowance > 0) {
