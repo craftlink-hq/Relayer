@@ -54,7 +54,7 @@ const tokenAbi_json_1 = __importDefault(require("./abi/tokenAbi.json"));
 const registryAbi_json_1 = __importDefault(require("./abi/registryAbi.json"));
 const reviewSystemAbi_json_1 = __importDefault(require("./abi/reviewSystemAbi.json"));
 const gigMarketplaceAbi_json_1 = __importDefault(require("./abi/gigMarketplaceAbi.json"));
-const paymentProcessorABI_json_1 = __importDefault(require("./abi/paymentProcessorABI.json"));
+const paymentProcessorAbi_json_1 = __importDefault(require("./abi/paymentProcessorAbi.json"));
 const craftCoinAbi_json_1 = __importDefault(require("./abi/craftCoinAbi.json"));
 dotenv.config();
 const app = (0, express_1.default)();
@@ -163,7 +163,7 @@ function executeGaslessTransaction(data) {
                 args = [data.user, data.params.databaseId];
                 break;
             case 'releaseArtisanFunds':
-                contract = new ethers_1.ethers.Contract(process.env.PAYMENT_PROCESSOR_ADDRESS, paymentProcessorABI_json_1.default, signer);
+                contract = new ethers_1.ethers.Contract(process.env.PAYMENT_PROCESSOR_ADDRESS, paymentProcessorAbi_json_1.default, signer);
                 method = 'releaseArtisanFundsFor';
                 const gigMarketplace = new ethers_1.ethers.Contract(process.env.GIG_MARKETPLACE_ADDRESS, gigMarketplaceAbi_json_1.default, signer);
                 const info = yield gigMarketplace.getGigInfo(data.params.databaseId);

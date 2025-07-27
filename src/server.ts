@@ -8,7 +8,7 @@ import tokenABI from './abi/tokenAbi.json';
 import registryABI from './abi/registryAbi.json';
 import reviewSystemABI from './abi/reviewSystemAbi.json';
 import gigMarketplaceABI from './abi/gigMarketplaceAbi.json';
-import paymentProcessorABI from './abi/paymentProcessorABI.json';
+import paymentProcessorABI from './abi/paymentProcessorAbi.json';
 import craftCoinABI from './abi/craftCoinAbi.json';
 
 dotenv.config();
