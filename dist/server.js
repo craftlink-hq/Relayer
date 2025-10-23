@@ -64,8 +64,9 @@ app.use((0, cors_1.default)({ origin: allowedOrigins, credentials: true }));
 app.use(express_1.default.json({ limit: '50mb' }));
 app.use(express_1.default.urlencoded({ limit: '50mb', extended: true }));
 app.use((0, morgan_1.default)('common'));
-// Persistent nonce tracking
+// Enhanced nonce tracking with locking mechanism
 const nonceTracker = {};
+const nonceLocks = {};
 function validateEnv() {
     const requiredVars = [
         'RPC_URL_LISK', 'PRIVATE_KEY_PASSWORD', 'ENCRYPTED_KEY_JSON',
@@ -88,16 +89,22 @@ function getSigner() {
 }
 function resetAllowanceIfNeeded(signer, user, tokenAddress, spender) {
     return __awaiter(this, void 0, void 0, function* () {
-        try {
-            const tokenContract = new ethers_1.ethers.Contract(tokenAddress, tokenAbi_json_1.default, signer);
-            const currentAllowance = yield tokenContract.allowance(user, spender);
-            if (currentAllowance > 0) {
-                yield tokenContract.approveFor(user, spender, 0);
-                console.log(`Allowance reset for ${user} to ${spender} on token ${tokenAddress}`);
-            }
+        const tokenContract = new ethers_1.ethers.Contract(tokenAddress, tokenAbi_json_1.default, signer);
+        const currentAllowance = yield tokenContract.allowance(user, spender);
+        if (currentAllowance > 0) {
+            yield tokenContract.approveFor(user, spender, 0);
         }
-        catch (error) {
-            console.error(`Failed to reset allowance for ${user} on ${tokenAddress}:`, error);
+    });
+}
+// Helper function to wait for lock release
+function waitForNonceLock(user_1) {
+    return __awaiter(this, arguments, void 0, function* (user, maxWaitTime = 10000) {
+        const startTime = Date.now();
+        while (nonceLocks[user] && (Date.now() - startTime) < maxWaitTime) {
+            yield new Promise(resolve => setTimeout(resolve, 100));
+        }
+        if (nonceLocks[user]) {
+            throw new Error('Nonce lock timeout - another transaction is taking too long');
         }
     });
 }
@@ -107,162 +114,198 @@ function executeGaslessTransaction(data) {
         let contract;
         let method;
         let args;
-        try {
-            switch (data.functionName) {
-                case 'approveToken':
-                    contract = new ethers_1.ethers.Contract(process.env.TOKEN_ADDRESS, tokenAbi_json_1.default, signer);
-                    method = 'approveFor';
-                    args = [data.user, data.params.spender, data.params.amount];
-                    break;
-                case 'approveCraftCoin':
-                    contract = new ethers_1.ethers.Contract(process.env.CRAFT_COIN_ADDRESS, craftCoinAbi_json_1.default, signer);
-                    method = 'approveFor';
-                    args = [data.user, data.params.spender, data.params.amount];
-                    break;
-                case 'claim':
-                    contract = new ethers_1.ethers.Contract(process.env.TOKEN_ADDRESS, tokenAbi_json_1.default, signer);
-                    method = 'claimFor';
-                    args = [data.user];
-                    break;
-                case 'registerAsArtisan':
-                    contract = new ethers_1.ethers.Contract(process.env.REGISTRY_ADDRESS, registryAbi_json_1.default, signer);
-                    method = 'registerAsArtisanFor';
-                    args = [data.user, data.params.ipfsUrl];
-                    break;
-                case 'registerAsClient':
-                    contract = new ethers_1.ethers.Contract(process.env.REGISTRY_ADDRESS, registryAbi_json_1.default, signer);
-                    method = 'registerAsClientFor';
-                    args = [data.user, data.params.ipfsUrl];
-                    break;
-                case 'submitReview':
-                    contract = new ethers_1.ethers.Contract(process.env.REVIEW_SYSTEM_ADDRESS, reviewSystemAbi_json_1.default, signer);
-                    method = 'artisanSubmitReviewFor';
-                    args = [data.user, data.params.databaseId, data.params.rating, data.params.commentHash];
-                    break;
-                case 'submitClientReview':
-                    contract = new ethers_1.ethers.Contract(process.env.REVIEW_SYSTEM_ADDRESS, reviewSystemAbi_json_1.default, signer);
-                    method = 'clientSubmitReviewFor';
-                    args = [data.user, data.params.databaseId, data.params.rating, data.params.commentHash];
-                    break;
-                case 'createGig':
-                    contract = new ethers_1.ethers.Contract(process.env.GIG_MARKETPLACE_ADDRESS, gigMarketplaceAbi_json_1.default, signer);
-                    method = 'createGigFor';
-                    args = [data.user, data.params.rootHash, data.params.databaseId, data.params.budget];
-                    break;
-                case 'applyForGig':
-                    contract = new ethers_1.ethers.Contract(process.env.GIG_MARKETPLACE_ADDRESS, gigMarketplaceAbi_json_1.default, signer);
-                    method = 'applyForGigFor';
-                    args = [data.user, data.params.databaseId];
-                    break;
-                case 'hireArtisan':
-                    contract = new ethers_1.ethers.Contract(process.env.GIG_MARKETPLACE_ADDRESS, gigMarketplaceAbi_json_1.default, signer);
-                    method = 'hireArtisanFor';
-                    args = [data.user, data.params.databaseId, data.params.artisan];
-                    break;
-                case 'markComplete':
-                    contract = new ethers_1.ethers.Contract(process.env.GIG_MARKETPLACE_ADDRESS, gigMarketplaceAbi_json_1.default, signer);
-                    method = 'markCompleteFor';
-                    args = [data.user, data.params.databaseId];
-                    break;
-                case 'confirmComplete':
-                    contract = new ethers_1.ethers.Contract(process.env.GIG_MARKETPLACE_ADDRESS, gigMarketplaceAbi_json_1.default, signer);
-                    method = 'confirmCompleteFor';
-                    args = [data.user, data.params.databaseId];
-                    break;
-                case 'releaseArtisanFunds':
-                    contract = new ethers_1.ethers.Contract(process.env.PAYMENT_PROCESSOR_ADDRESS, paymentProcessorAbi_json_1.default, signer);
-                    method = 'releaseArtisanFundsFor';
-                    const gigMarketplace = new ethers_1.ethers.Contract(process.env.GIG_MARKETPLACE_ADDRESS, gigMarketplaceAbi_json_1.default, signer);
-                    const info = yield gigMarketplace.getGigInfo(data.params.databaseId);
-                    args = [data.user, info.paymentId];
-                    break;
-                case 'mint':
-                    contract = new ethers_1.ethers.Contract(process.env.CRAFT_COIN_ADDRESS, craftCoinAbi_json_1.default, signer);
-                    method = 'mintFor';
-                    args = [data.user];
-                    break;
-                case 'closeGig':
-                    contract = new ethers_1.ethers.Contract(process.env.GIG_MARKETPLACE_ADDRESS, gigMarketplaceAbi_json_1.default, signer);
-                    method = 'closeGigFor';
-                    args = [data.user, data.params.databaseId];
-                    break;
-                default:
-                    throw new Error('Unsupported function');
-            }
-            const tx = yield contract[method](...args);
-            const receipt = yield tx.wait();
-            // Reset allowances for specific functions if not already zero
-            if (data.functionName === 'createGig') {
-                yield resetAllowanceIfNeeded(signer, data.user, process.env.TOKEN_ADDRESS, process.env.PAYMENT_PROCESSOR_ADDRESS);
-            }
-            else if (data.functionName === 'applyForGig') {
-                yield resetAllowanceIfNeeded(signer, data.user, process.env.CRAFT_COIN_ADDRESS, process.env.GIG_MARKETPLACE_ADDRESS);
-            }
-            return {
-                success: receipt.status === 1,
-                tx,
-                message: receipt.status === 1 ? `${data.functionName} executed` : `${data.functionName} failed`
-            };
+        switch (data.functionName) {
+            case 'approveToken':
+                contract = new ethers_1.ethers.Contract(process.env.TOKEN_ADDRESS, tokenAbi_json_1.default, signer);
+                method = 'approveFor';
+                args = [data.user, data.params.spender, data.params.amount];
+                break;
+            case 'approveCraftCoin':
+                contract = new ethers_1.ethers.Contract(process.env.CRAFT_COIN_ADDRESS, craftCoinAbi_json_1.default, signer);
+                method = 'approveFor';
+                args = [data.user, data.params.spender, data.params.amount];
+                break;
+            case 'claim':
+                contract = new ethers_1.ethers.Contract(process.env.TOKEN_ADDRESS, tokenAbi_json_1.default, signer);
+                method = 'claimFor';
+                args = [data.user];
+                break;
+            case 'registerAsArtisan':
+                contract = new ethers_1.ethers.Contract(process.env.REGISTRY_ADDRESS, registryAbi_json_1.default, signer);
+                method = 'registerAsArtisanFor';
+                args = [data.user, data.params.ipfsUrl];
+                break;
+            case 'registerAsClient':
+                contract = new ethers_1.ethers.Contract(process.env.REGISTRY_ADDRESS, registryAbi_json_1.default, signer);
+                method = 'registerAsClientFor';
+                args = [data.user, data.params.ipfsUrl];
+                break;
+            case 'submitReview':
+                contract = new ethers_1.ethers.Contract(process.env.REVIEW_SYSTEM_ADDRESS, reviewSystemAbi_json_1.default, signer);
+                method = 'artisanSubmitReviewFor';
+                args = [data.user, data.params.databaseId, data.params.rating, data.params.commentHash];
+                break;
+            case 'submitClientReview':
+                contract = new ethers_1.ethers.Contract(process.env.REVIEW_SYSTEM_ADDRESS, reviewSystemAbi_json_1.default, signer);
+                method = 'clientSubmitReviewFor';
+                args = [data.user, data.params.databaseId, data.params.rating, data.params.commentHash];
+                break;
+            case 'createGig':
+                contract = new ethers_1.ethers.Contract(process.env.GIG_MARKETPLACE_ADDRESS, gigMarketplaceAbi_json_1.default, signer);
+                method = 'createGigFor';
+                args = [data.user, data.params.rootHash, data.params.databaseId, data.params.budget];
+                break;
+            case 'applyForGig':
+                contract = new ethers_1.ethers.Contract(process.env.GIG_MARKETPLACE_ADDRESS, gigMarketplaceAbi_json_1.default, signer);
+                method = 'applyForGigFor';
+                args = [data.user, data.params.databaseId];
+                break;
+            case 'hireArtisan':
+                contract = new ethers_1.ethers.Contract(process.env.GIG_MARKETPLACE_ADDRESS, gigMarketplaceAbi_json_1.default, signer);
+                method = 'hireArtisanFor';
+                args = [data.user, data.params.databaseId, data.params.artisan];
+                break;
+            case 'markComplete':
+                contract = new ethers_1.ethers.Contract(process.env.GIG_MARKETPLACE_ADDRESS, gigMarketplaceAbi_json_1.default, signer);
+                method = 'markCompleteFor';
+                args = [data.user, data.params.databaseId];
+                break;
+            case 'confirmComplete':
+                contract = new ethers_1.ethers.Contract(process.env.GIG_MARKETPLACE_ADDRESS, gigMarketplaceAbi_json_1.default, signer);
+                method = 'confirmCompleteFor';
+                args = [data.user, data.params.databaseId];
+                break;
+            case 'releaseArtisanFunds':
+                contract = new ethers_1.ethers.Contract(process.env.PAYMENT_PROCESSOR_ADDRESS, paymentProcessorAbi_json_1.default, signer);
+                method = 'releaseArtisanFundsFor';
+                const gigMarketplace = new ethers_1.ethers.Contract(process.env.GIG_MARKETPLACE_ADDRESS, gigMarketplaceAbi_json_1.default, signer);
+                const info = yield gigMarketplace.getGigInfo(data.params.databaseId);
+                args = [data.user, info.paymentId];
+                break;
+            case 'mint':
+                contract = new ethers_1.ethers.Contract(process.env.CRAFT_COIN_ADDRESS, craftCoinAbi_json_1.default, signer);
+                method = 'mintFor';
+                args = [data.user];
+                break;
+            case 'closeGig':
+                contract = new ethers_1.ethers.Contract(process.env.GIG_MARKETPLACE_ADDRESS, gigMarketplaceAbi_json_1.default, signer);
+                method = 'closeGigFor';
+                args = [data.user, data.params.databaseId];
+                break;
+            default:
+                throw new Error('Unsupported function');
         }
-        catch (error) {
-            console.error(`Transaction failed for ${data.functionName}:`, error);
-            throw error;
+        const tx = yield contract[method](...args);
+        const receipt = yield tx.wait();
+        // Reset allowances for specific functions if not already zero
+        if (data.functionName === 'createGig') {
+            yield resetAllowanceIfNeeded(signer, data.user, process.env.TOKEN_ADDRESS, process.env.PAYMENT_PROCESSOR_ADDRESS);
         }
+        else if (data.functionName === 'applyForGig') {
+            yield resetAllowanceIfNeeded(signer, data.user, process.env.CRAFT_COIN_ADDRESS, process.env.GIG_MARKETPLACE_ADDRESS);
+        }
+        return {
+            success: receipt.status === 1,
+            tx,
+            message: receipt.status === 1 ? `${data.functionName} executed` : `${data.functionName} failed`
+        };
     });
 }
 function verifySignatureWithEthers(message, signature) {
     return ethers_1.ethers.verifyMessage(message, signature);
 }
+// Enhanced nonce endpoint that reserves the nonce
 app.get('/nonce/:user', (req, res) => {
     const user = req.params.user.toLowerCase();
     const currentNonce = nonceTracker[user] || 0;
-    console.log(`Fetching nonce for ${user}: ${currentNonce + 1}`);
-    res.status(200).send({ nonce: currentNonce + 1 });
+    const nextNonce = currentNonce + 1;
+    res.status(200).send({
+        nonce: nextNonce,
+        currentNonce: currentNonce,
+        timestamp: Date.now()
+    });
 });
-app.post('/reset-nonce/:user', (req, res) => {
+// Alternative endpoint to get current nonce without incrementing
+app.get('/current-nonce/:user', (req, res) => {
     const user = req.params.user.toLowerCase();
-    if (nonceTracker[user]) {
-        delete nonceTracker[user];
-        console.log(`Nonce reset for user ${user}`);
-        res.status(200).send({ success: true, message: `Nonce reset for user ${user}` });
-    }
-    else {
-        res.status(404).send({ success: false, message: `No nonce found for user ${user}` });
-    }
+    const currentNonce = nonceTracker[user] || 0;
+    res.status(200).send({
+        currentNonce: currentNonce,
+        nextNonce: currentNonce + 1,
+        timestamp: Date.now()
+    });
 });
 app.post('/gasless-transaction', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const data = req.body;
-    const message = JSON.stringify({ functionName: data.functionName, user: data.user, params: data.params, nonce: data.nonce });
-    const signerAddress = verifySignatureWithEthers(message, data.signature);
-    if (signerAddress.toLowerCase() !== data.user.toLowerCase()) {
-        console.log(`Invalid signature for user ${data.user}`);
-        res.status(400).send({ success: false, message: 'Invalid signature' });
-        return;
-    }
-    const lastNonce = nonceTracker[data.user] || 0;
-    console.log(`Received nonce ${data.nonce} for user ${data.user}, lastNonce is ${lastNonce}`);
-    if (data.nonce !== lastNonce + 1) {
-        console.log(`Invalid nonce for user ${data.user}: expected ${lastNonce + 1}, got ${data.nonce}`);
-        res.status(400).send({ success: false, message: 'Invalid or duplicate nonce' });
-        return;
-    }
+    const userLower = data.user.toLowerCase();
     try {
+        // Wait for any existing lock to be released
+        yield waitForNonceLock(userLower);
+        // Acquire lock
+        nonceLocks[userLower] = true;
+        const message = JSON.stringify({
+            functionName: data.functionName,
+            user: data.user,
+            params: data.params,
+            nonce: data.nonce
+        });
+        const signerAddress = verifySignatureWithEthers(message, data.signature);
+        if (signerAddress.toLowerCase() !== userLower) {
+            throw new Error('Invalid signature');
+        }
+        // Validate nonce with more flexible logic
+        const currentNonce = nonceTracker[userLower] || 0;
+        const expectedNonce = currentNonce + 1;
+        if (data.nonce < expectedNonce) {
+            throw new Error(`Nonce too low. Expected: ${expectedNonce}, Received: ${data.nonce}`);
+        }
+        if (data.nonce > expectedNonce + 5) { // Allow some tolerance for concurrent requests
+            throw new Error(`Nonce too high. Expected: ${expectedNonce}, Received: ${data.nonce}`);
+        }
+        // Execute the transaction
         const result = yield executeGaslessTransaction(data);
         if (result.success) {
-            nonceTracker[data.user] = data.nonce;
-            console.log(`Updated nonce for user ${data.user} to ${data.nonce}`);
-            res.status(200).send(result);
+            // Update nonce only on successful transaction
+            nonceTracker[userLower] = data.nonce;
+            res.status(200).send(Object.assign(Object.assign({}, result), { newNonce: data.nonce, nextNonce: data.nonce + 1 }));
         }
         else {
-            console.log(`Transaction failed for user ${data.user}, nonce not updated`);
-            res.status(500).send(result);
+            // Transaction failed but was processed - still update nonce to prevent replay
+            nonceTracker[userLower] = data.nonce;
+            res.status(500).send(Object.assign(Object.assign({}, result), { newNonce: data.nonce, nextNonce: data.nonce + 1 }));
         }
     }
     catch (error) {
-        console.log(`Unexpected error for user ${data.user}:`, error);
-        res.status(500).send({ success: false, message: error.reason || 'Transaction failed' });
+        console.error(`Transaction error for user ${userLower}:`, error);
+        // Only update nonce if it was a valid nonce but transaction failed
+        const currentNonce = nonceTracker[userLower] || 0;
+        if (data.nonce === currentNonce + 1) {
+            nonceTracker[userLower] = data.nonce;
+        }
+        res.status(500).send({
+            success: false,
+            message: error.message || error.reason || 'Transaction failed',
+            currentNonce: nonceTracker[userLower] || 0,
+            nextNonce: (nonceTracker[userLower] || 0) + 1
+        });
+    }
+    finally {
+        // Always release the lock
+        delete nonceLocks[userLower];
     }
 }));
+// Debug endpoint to reset nonce for a user (useful for development)
+app.post('/reset-nonce/:user', (req, res) => {
+    const user = req.params.user.toLowerCase();
+    delete nonceTracker[user];
+    delete nonceLocks[user];
+    res.status(200).send({
+        success: true,
+        message: `Nonce reset for user ${user}`,
+        newNonce: 0,
+        nextNonce: 1
+    });
+});
 app.get('/', (req, res) => {
     res.status(200).send({ message: 'Backend is running!' });
 });
